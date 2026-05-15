@@ -1,0 +1,1301 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SWIPE — The Social Hub for Memecoin Culture</title>
+<meta name="description" content="Track coins, post memes, earn points, and connect with degens worldwide.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@400;700;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #050508;
+    --surface: #0d0d14;
+    --surface2: #13131e;
+    --border: rgba(255,255,255,0.07);
+    --green: #00ff88;
+    --green-dim: rgba(0,255,136,0.12);
+    --green-glow: rgba(0,255,136,0.25);
+    --text: #f0f0f5;
+    --muted: #6b6b80;
+    --accent: #7c5cfc;
+    --red: #ff4466;
+    --mono: 'Space Mono', monospace;
+    --display: 'Syne', sans-serif;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--display);
+    overflow-x: hidden;
+    cursor: default;
+  }
+
+  /* NOISE TEXTURE OVERLAY */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
+    pointer-events: none;
+    z-index: 1000;
+    opacity: 0.5;
+  }
+
+  /* SCANLINES */
+  body::after {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background: repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,0,0,0.03) 2px, rgba(0,0,0,0.03) 4px);
+    pointer-events: none;
+    z-index: 999;
+  }
+
+  /* NAV */
+  nav {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 100;
+    padding: 20px 40px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-bottom: 1px solid var(--border);
+    background: rgba(5,5,8,0.85);
+    backdrop-filter: blur(16px);
+  }
+
+  .nav-logo {
+    font-family: var(--mono);
+    font-size: 18px;
+    font-weight: 700;
+    letter-spacing: -0.5px;
+    color: var(--green);
+    text-decoration: none;
+  }
+
+  .nav-logo span { color: var(--text); }
+
+  .nav-links {
+    display: flex;
+    gap: 32px;
+    list-style: none;
+  }
+
+  .nav-links a {
+    font-family: var(--mono);
+    font-size: 12px;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    color: var(--muted);
+    text-decoration: none;
+    transition: color 0.2s;
+  }
+
+  .nav-links a:hover { color: var(--green); }
+
+  .nav-cta {
+    font-family: var(--mono);
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    color: #000;
+    background: var(--green);
+    border: none;
+    padding: 10px 20px;
+    cursor: pointer;
+    clip-path: polygon(8px 0%, 100% 0%, calc(100% - 8px) 100%, 0% 100%);
+    transition: opacity 0.2s;
+    text-decoration: none;
+  }
+
+  .nav-cta:hover { opacity: 0.85; }
+
+  /* HERO */
+  .hero {
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    padding: 120px 40px 80px;
+    overflow: hidden;
+  }
+
+  /* GRID BACKGROUND */
+  .hero-grid {
+    position: absolute;
+    inset: 0;
+    background-image:
+      linear-gradient(var(--border) 1px, transparent 1px),
+      linear-gradient(90deg, var(--border) 1px, transparent 1px);
+    background-size: 60px 60px;
+    mask-image: radial-gradient(ellipse 80% 70% at 50% 50%, black 30%, transparent 100%);
+  }
+
+  /* GLOW ORBS */
+  .orb {
+    position: absolute;
+    border-radius: 50%;
+    filter: blur(80px);
+    pointer-events: none;
+  }
+  .orb-1 {
+    width: 600px; height: 600px;
+    background: radial-gradient(circle, rgba(0,255,136,0.08) 0%, transparent 70%);
+    top: -100px; left: -100px;
+  }
+  .orb-2 {
+    width: 500px; height: 500px;
+    background: radial-gradient(circle, rgba(124,92,252,0.1) 0%, transparent 70%);
+    bottom: 0; right: -100px;
+  }
+
+  .hero-content {
+    position: relative;
+    z-index: 2;
+    text-align: center;
+    max-width: 900px;
+  }
+
+  .hero-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--green);
+    border: 1px solid var(--green-dim);
+    background: var(--green-dim);
+    padding: 6px 14px;
+    margin-bottom: 32px;
+    animation: fadein 0.8s ease forwards;
+  }
+
+  .hero-badge::before {
+    content: '';
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: var(--green);
+    animation: pulse 2s infinite;
+  }
+
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.3; }
+  }
+
+  .hero-title {
+    font-size: clamp(64px, 12vw, 140px);
+    font-weight: 800;
+    line-height: 0.9;
+    letter-spacing: -4px;
+    margin-bottom: 8px;
+    animation: fadein 0.8s 0.1s ease both;
+  }
+
+  .hero-title .green { color: var(--green); }
+  .hero-title .dim { color: var(--muted); }
+
+  .hero-subtitle-line {
+    font-family: var(--mono);
+    font-size: clamp(11px, 1.5vw, 14px);
+    color: var(--muted);
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    margin-bottom: 36px;
+    animation: fadein 0.8s 0.2s ease both;
+  }
+
+  .hero-desc {
+    font-size: clamp(16px, 2vw, 20px);
+    color: rgba(240,240,245,0.7);
+    line-height: 1.6;
+    max-width: 580px;
+    margin: 0 auto 48px;
+    animation: fadein 0.8s 0.3s ease both;
+  }
+
+  .hero-actions {
+    display: flex;
+    gap: 16px;
+    justify-content: center;
+    flex-wrap: wrap;
+    animation: fadein 0.8s 0.4s ease both;
+  }
+
+  .btn-primary {
+    font-family: var(--mono);
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: #000;
+    background: var(--green);
+    border: none;
+    padding: 16px 36px;
+    cursor: pointer;
+    clip-path: polygon(10px 0%, 100% 0%, calc(100% - 10px) 100%, 0% 100%);
+    transition: transform 0.2s, opacity 0.2s;
+    text-decoration: none;
+    display: inline-block;
+  }
+
+  .btn-primary:hover { transform: translateY(-2px); opacity: 0.9; }
+
+  .btn-secondary {
+    font-family: var(--mono);
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: var(--text);
+    background: transparent;
+    border: 1px solid var(--border);
+    padding: 16px 36px;
+    cursor: pointer;
+    clip-path: polygon(10px 0%, 100% 0%, calc(100% - 10px) 100%, 0% 100%);
+    transition: border-color 0.2s, transform 0.2s;
+    text-decoration: none;
+    display: inline-block;
+  }
+
+  .btn-secondary:hover { border-color: var(--green); transform: translateY(-2px); }
+
+  /* TICKER */
+  .ticker-wrap {
+    width: 100%;
+    overflow: hidden;
+    border-top: 1px solid var(--border);
+    border-bottom: 1px solid var(--border);
+    background: var(--surface);
+    padding: 12px 0;
+    position: relative;
+    z-index: 2;
+  }
+
+  .ticker-track {
+    display: flex;
+    gap: 0;
+    animation: ticker 30s linear infinite;
+    white-space: nowrap;
+  }
+
+  .ticker-item {
+    font-family: var(--mono);
+    font-size: 12px;
+    padding: 0 32px;
+    color: var(--muted);
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    border-right: 1px solid var(--border);
+  }
+
+  .ticker-item .up { color: var(--green); }
+  .ticker-item .dn { color: var(--red); }
+
+  @keyframes ticker {
+    0% { transform: translateX(0); }
+    100% { transform: translateX(-50%); }
+  }
+
+  @keyframes fadein {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  /* STATS */
+  .stats {
+    padding: 80px 40px;
+    max-width: 1200px;
+    margin: 0 auto;
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 1px;
+    background: var(--border);
+  }
+
+  .stat {
+    background: var(--bg);
+    padding: 40px 32px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .stat::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 2px;
+    background: var(--green);
+    transform: scaleX(0);
+    transition: transform 0.4s ease;
+    transform-origin: left;
+  }
+
+  .stat:hover::before { transform: scaleX(1); }
+
+  .stat-num {
+    font-size: 48px;
+    font-weight: 800;
+    color: var(--green);
+    line-height: 1;
+    margin-bottom: 8px;
+    font-family: var(--mono);
+  }
+
+  .stat-label {
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+
+  /* FEATURES */
+  .section {
+    padding: 120px 40px;
+    max-width: 1200px;
+    margin: 0 auto;
+  }
+
+  .section-label {
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    color: var(--green);
+    margin-bottom: 16px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .section-label::after {
+    content: '';
+    flex: 1;
+    max-width: 60px;
+    height: 1px;
+    background: var(--green-dim);
+  }
+
+  .section-title {
+    font-size: clamp(36px, 5vw, 64px);
+    font-weight: 800;
+    letter-spacing: -2px;
+    line-height: 1;
+    margin-bottom: 60px;
+  }
+
+  .features-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1px;
+    background: var(--border);
+  }
+
+  .feature {
+    background: var(--surface);
+    padding: 40px 36px;
+    position: relative;
+    overflow: hidden;
+    transition: background 0.3s;
+  }
+
+  .feature:hover { background: var(--surface2); }
+
+  .feature-icon {
+    width: 48px;
+    height: 48px;
+    border: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 24px;
+    font-size: 22px;
+    position: relative;
+  }
+
+  .feature-icon::before {
+    content: '';
+    position: absolute;
+    inset: -1px;
+    border: 1px solid var(--green);
+    opacity: 0;
+    transition: opacity 0.3s;
+  }
+
+  .feature:hover .feature-icon::before { opacity: 1; }
+
+  .feature-title {
+    font-size: 20px;
+    font-weight: 700;
+    margin-bottom: 12px;
+    letter-spacing: -0.5px;
+  }
+
+  .feature-desc {
+    font-family: var(--mono);
+    font-size: 13px;
+    color: var(--muted);
+    line-height: 1.7;
+  }
+
+  .feature-tag {
+    display: inline-block;
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: var(--green);
+    border: 1px solid var(--green-dim);
+    padding: 3px 10px;
+    margin-top: 20px;
+  }
+
+  /* MOCKUP / PREVIEW */
+  .preview-section {
+    padding: 80px 40px 120px;
+    max-width: 1200px;
+    margin: 0 auto;
+  }
+
+  .mock-screen {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    overflow: hidden;
+    position: relative;
+  }
+
+  .mock-bar {
+    background: var(--surface2);
+    border-bottom: 1px solid var(--border);
+    padding: 12px 20px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .mock-dot {
+    width: 10px; height: 10px;
+    border-radius: 50%;
+    background: var(--border);
+  }
+
+  .mock-url {
+    flex: 1;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 3px;
+    padding: 4px 12px;
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--muted);
+    text-align: center;
+  }
+
+  .mock-body {
+    padding: 24px;
+    display: grid;
+    grid-template-columns: 220px 1fr 280px;
+    gap: 16px;
+    min-height: 460px;
+  }
+
+  .mock-sidebar {
+    border-right: 1px solid var(--border);
+    padding-right: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .mock-nav-item {
+    font-family: var(--mono);
+    font-size: 11px;
+    padding: 8px 12px;
+    color: var(--muted);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    border-radius: 2px;
+  }
+
+  .mock-nav-item.active {
+    background: var(--green-dim);
+    color: var(--green);
+    border-left: 2px solid var(--green);
+  }
+
+  .mock-feed { display: flex; flex-direction: column; gap: 12px; }
+
+  .mock-post {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    padding: 14px;
+    border-radius: 2px;
+  }
+
+  .mock-post-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 10px;
+  }
+
+  .mock-avatar {
+    width: 28px; height: 28px;
+    border-radius: 50%;
+    background: var(--green-dim);
+    border: 1px solid var(--green);
+    font-size: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: var(--mono);
+    color: var(--green);
+  }
+
+  .mock-uname {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--text);
+  }
+
+  .mock-time {
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--muted);
+    margin-left: auto;
+  }
+
+  .mock-post-text {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: rgba(240,240,245,0.7);
+    line-height: 1.6;
+  }
+
+  .mock-post-text .green { color: var(--green); }
+  .mock-post-text .red { color: var(--red); }
+
+  .mock-stats-panel {
+    border-left: 1px solid var(--border);
+    padding-left: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .mock-coin {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    padding: 12px;
+    border-radius: 2px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .mock-coin-icon {
+    width: 32px; height: 32px;
+    border-radius: 50%;
+    background: var(--green-dim);
+    border: 1px solid var(--green);
+    font-size: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .mock-coin-name {
+    font-family: var(--mono);
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--text);
+  }
+
+  .mock-coin-price {
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--green);
+    margin-left: auto;
+  }
+
+  /* ROADMAP */
+  .roadmap {
+    padding: 80px 40px 120px;
+    max-width: 1200px;
+    margin: 0 auto;
+  }
+
+  .roadmap-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 1px;
+    background: var(--border);
+    position: relative;
+  }
+
+  .phase {
+    background: var(--surface);
+    padding: 36px 28px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .phase.active {
+    background: var(--surface2);
+  }
+
+  .phase.active::after {
+    content: 'LIVE';
+    position: absolute;
+    top: 16px; right: 16px;
+    font-family: var(--mono);
+    font-size: 9px;
+    letter-spacing: 2px;
+    color: #000;
+    background: var(--green);
+    padding: 3px 8px;
+  }
+
+  .phase-num {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--muted);
+    letter-spacing: 2px;
+    margin-bottom: 16px;
+  }
+
+  .phase-title {
+    font-size: 22px;
+    font-weight: 700;
+    letter-spacing: -0.5px;
+    margin-bottom: 20px;
+    color: var(--text);
+  }
+
+  .phase.active .phase-title { color: var(--green); }
+
+  .phase-items {
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .phase-items li {
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--muted);
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    line-height: 1.5;
+  }
+
+  .phase-items li::before {
+    content: '—';
+    color: var(--border);
+    flex-shrink: 0;
+  }
+
+  .phase.active .phase-items li::before { color: var(--green); }
+  .phase.active .phase-items li { color: rgba(240,240,245,0.8); }
+
+  /* TOKENOMICS */
+  .tokenomics {
+    padding: 80px 40px 120px;
+    max-width: 1200px;
+    margin: 0 auto;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 80px;
+    align-items: center;
+  }
+
+  .token-info { }
+
+  .token-name {
+    font-family: var(--mono);
+    font-size: 64px;
+    font-weight: 700;
+    color: var(--green);
+    line-height: 1;
+    margin-bottom: 8px;
+  }
+
+  .token-chain {
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--muted);
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    margin-bottom: 40px;
+  }
+
+  .token-facts {
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+    background: var(--border);
+    margin-bottom: 32px;
+  }
+
+  .token-fact {
+    background: var(--surface);
+    padding: 16px 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .token-fact-label {
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+
+  .token-fact-value {
+    font-family: var(--mono);
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--text);
+  }
+
+  .token-fact-value.green { color: var(--green); }
+
+  /* DONUT CHART */
+  .donut-wrap {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 32px;
+  }
+
+  .donut-svg { width: 240px; height: 240px; }
+
+  .donut-legend {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .legend-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--muted);
+  }
+
+  .legend-dot {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+
+  .legend-pct {
+    margin-left: auto;
+    color: var(--text);
+    font-weight: 700;
+  }
+
+  /* CTA SECTION */
+  .cta-section {
+    margin: 0 40px 120px;
+    border: 1px solid var(--border);
+    position: relative;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 100px 40px;
+    text-align: center;
+  }
+
+  .cta-section::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(ellipse 70% 60% at 50% 50%, rgba(0,255,136,0.05) 0%, transparent 70%);
+  }
+
+  .cta-section .section-title {
+    position: relative;
+    z-index: 1;
+    margin-bottom: 20px;
+  }
+
+  .cta-desc {
+    font-family: var(--mono);
+    font-size: 14px;
+    color: var(--muted);
+    margin-bottom: 40px;
+    position: relative;
+    z-index: 1;
+    max-width: 480px;
+  }
+
+  .cta-buttons {
+    display: flex;
+    gap: 16px;
+    justify-content: center;
+    position: relative;
+    z-index: 1;
+    flex-wrap: wrap;
+  }
+
+  /* FOOTER */
+  footer {
+    border-top: 1px solid var(--border);
+    padding: 40px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 20px;
+  }
+
+  .footer-logo {
+    font-family: var(--mono);
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--green);
+  }
+
+  .footer-links {
+    display: flex;
+    gap: 24px;
+    list-style: none;
+  }
+
+  .footer-links a {
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    color: var(--muted);
+    text-decoration: none;
+    transition: color 0.2s;
+  }
+
+  .footer-links a:hover { color: var(--green); }
+
+  .footer-copy {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--muted);
+  }
+
+  /* SEPARATOR LINE */
+  .sep {
+    height: 1px;
+    background: var(--border);
+    margin: 0 40px;
+  }
+
+  @media (max-width: 900px) {
+    nav { padding: 16px 20px; }
+    .nav-links { display: none; }
+    .hero { padding: 100px 20px 60px; }
+    .stats { grid-template-columns: repeat(2, 1fr); padding: 40px 20px; }
+    .features-grid { grid-template-columns: 1fr; }
+    .mock-body { grid-template-columns: 1fr; }
+    .mock-sidebar, .mock-stats-panel { display: none; }
+    .roadmap-grid { grid-template-columns: repeat(2, 1fr); }
+    .tokenomics { grid-template-columns: 1fr; padding: 40px 20px; gap: 40px; }
+    .section { padding: 60px 20px; }
+    .cta-section { margin: 0 20px 60px; padding: 60px 20px; }
+    footer { padding: 24px 20px; }
+    .sep { margin: 0 20px; }
+  }
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav>
+  <a href="#" class="nav-logo">SWIPE<span>.fun</span></a>
+  <ul class="nav-links">
+    <li><a href="#features">Features</a></li>
+    <li><a href="#roadmap">Roadmap</a></li>
+    <li><a href="#token">Token</a></li>
+    <li><a href="https://x.com" target="_blank">Twitter</a></li>
+  </ul>
+  <a href="https://pump.fun" target="_blank" class="nav-cta">Buy $SWIPE</a>
+</nav>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="hero-grid"></div>
+  <div class="orb orb-1"></div>
+  <div class="orb orb-2"></div>
+  <div class="hero-content">
+    <div class="hero-badge">Now live on pump.fun</div>
+    <h1 class="hero-title">
+      <span class="green">SWIPE</span><br>
+      <span class="dim">.FUN</span>
+    </h1>
+    <p class="hero-subtitle-line">The social hub for memecoin culture</p>
+    <p class="hero-desc">Track coins, post memes, earn points, and connect with degens worldwide. Built for the culture.</p>
+    <div class="hero-actions">
+      <a href="https://pump.fun" target="_blank" class="btn-primary">Buy $SWIPE on pump.fun</a>
+      <a href="#features" class="btn-secondary">Explore platform →</a>
+    </div>
+  </div>
+</section>
+
+<!-- TICKER -->
+<div class="ticker-wrap">
+  <div class="ticker-track">
+    <span class="ticker-item">$SWIPE <span class="up">+420%</span></span>
+    <span class="ticker-item">$PEPE <span class="up">+12.4%</span></span>
+    <span class="ticker-item">$DOGE <span class="dn">-3.2%</span></span>
+    <span class="ticker-item">$WIF <span class="up">+88.0%</span></span>
+    <span class="ticker-item">$BONK <span class="up">+5.6%</span></span>
+    <span class="ticker-item">$FLOKI <span class="dn">-1.8%</span></span>
+    <span class="ticker-item">$MEME <span class="up">+34.2%</span></span>
+    <span class="ticker-item">$SHIB <span class="dn">-0.9%</span></span>
+    <span class="ticker-item">$TURBO <span class="up">+69.0%</span></span>
+    <span class="ticker-item">$SWIPE <span class="up">+420%</span></span>
+    <span class="ticker-item">$PEPE <span class="up">+12.4%</span></span>
+    <span class="ticker-item">$DOGE <span class="dn">-3.2%</span></span>
+    <span class="ticker-item">$WIF <span class="up">+88.0%</span></span>
+    <span class="ticker-item">$BONK <span class="up">+5.6%</span></span>
+    <span class="ticker-item">$FLOKI <span class="dn">-1.8%</span></span>
+    <span class="ticker-item">$MEME <span class="up">+34.2%</span></span>
+    <span class="ticker-item">$SHIB <span class="dn">-0.9%</span></span>
+    <span class="ticker-item">$TURBO <span class="up">+69.0%</span></span>
+  </div>
+</div>
+
+<!-- STATS -->
+<div class="stats">
+  <div class="stat">
+    <div class="stat-num">420K+</div>
+    <div class="stat-label">Degens onboard</div>
+  </div>
+  <div class="stat">
+    <div class="stat-num">2.1M</div>
+    <div class="stat-label">Memes posted</div>
+  </div>
+  <div class="stat">
+    <div class="stat-num">$69M</div>
+    <div class="stat-label">Volume tracked</div>
+  </div>
+  <div class="stat">
+    <div class="stat-num">∞</div>
+    <div class="stat-label">Points earned</div>
+  </div>
+</div>
+
+<div class="sep"></div>
+
+<!-- FEATURES -->
+<section class="section" id="features">
+  <div class="section-label">What we built</div>
+  <h2 class="section-title">Everything a degen<br>could ever need.</h2>
+  <div class="features-grid">
+    <div class="feature">
+      <div class="feature-icon">📊</div>
+      <div class="feature-title">Coin Tracker</div>
+      <p class="feature-desc">Real-time charts, volume spikes, and whale alerts. Know before everyone else. Be early or be ngmi.</p>
+      <span class="feature-tag">live data</span>
+    </div>
+    <div class="feature">
+      <div class="feature-icon">🖼</div>
+      <div class="feature-title">Meme Feed</div>
+      <p class="feature-desc">Post takes, drop memes, go viral. The feed rewards quality over quantity. Best memes get boosted.</p>
+      <span class="feature-tag">social</span>
+    </div>
+    <div class="feature">
+      <div class="feature-icon">⚡</div>
+      <div class="feature-title">Points System</div>
+      <p class="feature-desc">Earn $SWIPE points for every interaction. Post, comment, predict, hold. Points = power. Simple.</p>
+      <span class="feature-tag">earn</span>
+    </div>
+    <div class="feature">
+      <div class="feature-icon">🌐</div>
+      <div class="feature-title">Degen Network</div>
+      <p class="feature-desc">Connect with degens worldwide. Follow the sharpest callers. Build your on-chain reputation.</p>
+      <span class="feature-tag">community</span>
+    </div>
+    <div class="feature">
+      <div class="feature-icon">🎯</div>
+      <div class="feature-title">Price Predictions</div>
+      <p class="feature-desc">Call the next 10x. Get it right and flex forever. Wrong? Just say gm and try again. No shame.</p>
+      <span class="feature-tag">alpha</span>
+    </div>
+    <div class="feature">
+      <div class="feature-icon">🔔</div>
+      <div class="feature-title">Swipe Alerts</div>
+      <p class="feature-desc">Custom notifications for coins you track. Breakouts, dumps, whale moves — never miss a play.</p>
+      <span class="feature-tag">alerts</span>
+    </div>
+  </div>
+</section>
+
+<!-- PLATFORM PREVIEW -->
+<section class="preview-section">
+  <div class="section-label">Platform preview</div>
+  <h2 class="section-title" style="margin-bottom:32px">Built different.</h2>
+  <div class="mock-screen">
+    <div class="mock-bar">
+      <div class="mock-dot"></div>
+      <div class="mock-dot"></div>
+      <div class="mock-dot"></div>
+      <div class="mock-url">swipe.fun / feed</div>
+    </div>
+    <div class="mock-body">
+      <div class="mock-sidebar">
+        <div class="mock-nav-item active">⚡ Feed</div>
+        <div class="mock-nav-item">📊 Markets</div>
+        <div class="mock-nav-item">🎯 Predict</div>
+        <div class="mock-nav-item">👤 Profile</div>
+        <div class="mock-nav-item">🔔 Alerts</div>
+        <div style="margin-top:auto;padding:12px;background:var(--green-dim);border:1px solid rgba(0,255,136,0.2);">
+          <div style="font-family:var(--mono);font-size:10px;color:var(--green);margin-bottom:4px;">YOUR POINTS</div>
+          <div style="font-family:var(--mono);font-size:20px;font-weight:700;color:var(--green);">4,200</div>
+          <div style="font-family:var(--mono);font-size:9px;color:var(--muted);margin-top:2px;">rank #420</div>
+        </div>
+      </div>
+      <div class="mock-feed">
+        <div class="mock-post">
+          <div class="mock-post-header">
+            <div class="mock-avatar">W</div>
+            <span class="mock-uname">whale_watcher</span>
+            <span class="mock-time">2m ago</span>
+          </div>
+          <div class="mock-post-text"><span class="green">$SWIPE</span> just broke resistance at 0.0042. Next stop: <span class="green">0.0069</span>. Not financial advice but you already know. 🟢</div>
+        </div>
+        <div class="mock-post">
+          <div class="mock-post-header">
+            <div class="mock-avatar">D</div>
+            <span class="mock-uname">degenmaxi</span>
+            <span class="mock-time">5m ago</span>
+          </div>
+          <div class="mock-post-text">anyone who sold <span class="red">$BONK</span> at 2x is coping hard rn. I said what I said.</div>
+        </div>
+        <div class="mock-post">
+          <div class="mock-post-header">
+            <div class="mock-avatar">C</div>
+            <span class="mock-uname">cryptorat</span>
+            <span class="mock-time">12m ago</span>
+          </div>
+          <div class="mock-post-text">new meme coin meta dropping. <span class="green">$SWIPE</span> leading the charge. this is the way.</div>
+        </div>
+      </div>
+      <div class="mock-stats-panel">
+        <div style="font-family:var(--mono);font-size:10px;letter-spacing:2px;color:var(--muted);margin-bottom:4px;">TRENDING NOW</div>
+        <div class="mock-coin">
+          <div class="mock-coin-icon">🟢</div>
+          <div>
+            <div class="mock-coin-name">$SWIPE</div>
+            <div style="font-family:var(--mono);font-size:9px;color:var(--muted);">Solana</div>
+          </div>
+          <div class="mock-coin-price">+420%</div>
+        </div>
+        <div class="mock-coin">
+          <div class="mock-coin-icon">🔴</div>
+          <div>
+            <div class="mock-coin-name">$PEPE</div>
+            <div style="font-family:var(--mono);font-size:9px;color:var(--muted);">Ethereum</div>
+          </div>
+          <div class="mock-coin-price" style="color:var(--green);">+12%</div>
+        </div>
+        <div class="mock-coin">
+          <div class="mock-coin-icon">🐕</div>
+          <div>
+            <div class="mock-coin-name">$WIF</div>
+            <div style="font-family:var(--mono);font-size:9px;color:var(--muted);">Solana</div>
+          </div>
+          <div class="mock-coin-price">+88%</div>
+        </div>
+        <div class="mock-coin">
+          <div class="mock-coin-icon">⚡</div>
+          <div>
+            <div class="mock-coin-name">$BONK</div>
+            <div style="font-family:var(--mono);font-size:9px;color:var(--muted);">Solana</div>
+          </div>
+          <div class="mock-coin-price" style="color:var(--red);">-2%</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="sep"></div>
+
+<!-- ROADMAP -->
+<section class="roadmap" id="roadmap">
+  <div class="section-label">Where we're going</div>
+  <h2 class="section-title">Roadmap.</h2>
+  <div class="roadmap-grid">
+    <div class="phase active">
+      <div class="phase-num">PHASE 01</div>
+      <div class="phase-title">Launch</div>
+      <ul class="phase-items">
+        <li>Token launch on pump.fun</li>
+        <li>Website & socials live</li>
+        <li>Community building</li>
+        <li>Whitepaper drop</li>
+        <li>CoinGecko listing</li>
+      </ul>
+    </div>
+    <div class="phase">
+      <div class="phase-num">PHASE 02</div>
+      <div class="phase-title">Platform Beta</div>
+      <ul class="phase-items">
+        <li>Meme feed MVP launch</li>
+        <li>Coin tracker integration</li>
+        <li>Points system live</li>
+        <li>1,000 beta users</li>
+        <li>CEX tier-1 application</li>
+      </ul>
+    </div>
+    <div class="phase">
+      <div class="phase-num">PHASE 03</div>
+      <div class="phase-title">Growth</div>
+      <ul class="phase-items">
+        <li>Mobile app (iOS + Android)</li>
+        <li>Prediction markets</li>
+        <li>Whale wallet tracker</li>
+        <li>Leaderboards & ranks</li>
+        <li>100K users milestone</li>
+      </ul>
+    </div>
+    <div class="phase">
+      <div class="phase-num">PHASE 04</div>
+      <div class="phase-title">Ecosystem</div>
+      <ul class="phase-items">
+        <li>$SWIPE staking launch</li>
+        <li>DAO governance</li>
+        <li>API for devs</li>
+        <li>Partner integrations</li>
+        <li>1M degen milestone</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<div class="sep"></div>
+
+<!-- TOKENOMICS -->
+<section class="tokenomics" id="token">
+  <div class="token-info">
+    <div class="section-label">The token</div>
+    <div class="token-name">$SWIPE</div>
+    <div class="token-chain">on solana · pump.fun</div>
+    <div class="token-facts">
+      <div class="token-fact">
+        <span class="token-fact-label">Total supply</span>
+        <span class="token-fact-value green">1,000,000,000</span>
+      </div>
+      <div class="token-fact">
+        <span class="token-fact-label">Network</span>
+        <span class="token-fact-value">Solana</span>
+      </div>
+      <div class="token-fact">
+        <span class="token-fact-label">Tax</span>
+        <span class="token-fact-value green">0 / 0</span>
+      </div>
+      <div class="token-fact">
+        <span class="token-fact-label">LP</span>
+        <span class="token-fact-value green">Burned</span>
+      </div>
+      <div class="token-fact">
+        <span class="token-fact-label">Contract</span>
+        <span class="token-fact-value" style="font-size:11px;">Renounced</span>
+      </div>
+    </div>
+    <a href="https://pump.fun" target="_blank" class="btn-primary">Buy $SWIPE now</a>
+  </div>
+  <div class="donut-wrap">
+    <svg class="donut-svg" viewBox="0 0 240 240" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <!-- 60% community -->
+      <circle cx="120" cy="120" r="90" fill="none" stroke="#0d0d14" stroke-width="40"/>
+      <circle cx="120" cy="120" r="90" fill="none" stroke="#00ff88" stroke-width="40"
+        stroke-dasharray="339.3 565.5" stroke-dashoffset="141.4"/>
+      <!-- 20% liquidity -->
+      <circle cx="120" cy="120" r="90" fill="none" stroke="#7c5cfc" stroke-width="40"
+        stroke-dasharray="113.1 565.5" stroke-dashoffset="-197.9"/>
+      <!-- 15% dev -->
+      <circle cx="120" cy="120" r="90" fill="none" stroke="#ff4466" stroke-width="40"
+        stroke-dasharray="84.8 565.5" stroke-dashoffset="-311"/>
+      <!-- 5% marketing -->
+      <circle cx="120" cy="120" r="90" fill="none" stroke="#f0a500" stroke-width="40"
+        stroke-dasharray="28.3 565.5" stroke-dashoffset="-395.8"/>
+      <text x="120" y="114" text-anchor="middle" font-family="'Space Mono'" font-size="28" font-weight="700" fill="#00ff88">60%</text>
+      <text x="120" y="135" text-anchor="middle" font-family="'Space Mono'" font-size="11" fill="#6b6b80">community</text>
+    </svg>
+    <div class="donut-legend">
+      <div class="legend-item">
+        <div class="legend-dot" style="background:#00ff88;"></div>
+        Community & rewards
+        <span class="legend-pct">60%</span>
+      </div>
+      <div class="legend-item">
+        <div class="legend-dot" style="background:#7c5cfc;"></div>
+        Liquidity pool
+        <span class="legend-pct">20%</span>
+      </div>
+      <div class="legend-item">
+        <div class="legend-dot" style="background:#ff4466;"></div>
+        Dev & team (locked 1yr)
+        <span class="legend-pct">15%</span>
+      </div>
+      <div class="legend-item">
+        <div class="legend-dot" style="background:#f0a500;"></div>
+        Marketing
+        <span class="legend-pct">5%</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- CTA -->
+<div class="cta-section">
+  <div class="section-label" style="justify-content:center">Don't be ngmi</div>
+  <h2 class="section-title">Join the culture.<br><span style="color:var(--green)">Buy $SWIPE.</span></h2>
+  <p class="cta-desc">The degens are already in. The feed is live. The memes are flying. What are you waiting for?</p>
+  <div class="cta-buttons">
+    <a href="https://pump.fun" target="_blank" class="btn-primary">Buy on pump.fun</a>
+    <a href="https://t.me" target="_blank" class="btn-secondary">Join Telegram</a>
+    <a href="https://x.com" target="_blank" class="btn-secondary">Follow on X</a>
+  </div>
+</div>
+
+<!-- FOOTER -->
+<footer>
+  <div class="footer-logo">SWIPE.FUN</div>
+  <ul class="footer-links">
+    <li><a href="https://t.me" target="_blank">Telegram</a></li>
+    <li><a href="https://x.com" target="_blank">Twitter / X</a></li>
+    <li><a href="https://pump.fun" target="_blank">pump.fun</a></li>
+    <li><a href="#">Whitepaper</a></li>
+  </ul>
+  <div class="footer-copy">$SWIPE is a memecoin. Not financial advice. DYOR.</div>
+</footer>
+
+</body>
+</html>
